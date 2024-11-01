@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WeAccess</string>
+    <string name="description_fullscreen">Tam Ekran</string>
+    <string name="exo_controls_repeat_toggle_modes">Tekrar Modları</string>
+    <string name="exo_controls_repeat_off_description">Tekrar Kapalı</string>
+    <string name="exo_controls_repeat_one_description">Tekrar Bir</string>
+    <string name="exo_controls_repeat_all_description">Tekrar Tümü</string>
+    <string name="exo_controls_shuffle_on_description">Karıştırma Açık</string>
+    <string name="exo_controls_shuffle_off_description">Karıştırma Kapalı</string>
+    <string name="exo_controls_vr_description">VR Modu</string>
+    <string name="exo_controls_custom_action_description">Özel Eylem</string>
+    <string name="exo_controls_settings_description">Ayarlar</string>
+    <string name="exo_controls_quality_description">Kalite</string>
+    <string name="exo_controls_debug_description">Hata Ayıklama</string>
+    <string name="exo_controls_pip_description">Pip</string>
+    <string name="exo_controls_pip_unavailable">Pip mevcut değil</string>
+    <string name="exo_controls_pip_unavailable_description">Pip mevcut değil</string>
+    <string name="exo_controls_pip_unavailable_video_unavailable">Pip mevcut değil. Video mevcut değil.</string>
+    <string name="exo_controls_pip_unavailable_video_unavailable_description">Pip mevcut değil. Video mevcut değil.</string>
+    <string name="exo_controls_pip_unavailable_not_supported">Pip mevcut değil. Desteklenmiyor.</string>
+</resources>
