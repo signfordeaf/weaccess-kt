@@ -3,28 +3,33 @@ package com.weaccess.accessibility.wephoto.service
 import com.weaccess.accessibility.WeAccessConfig
 import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 
 class ApiService {
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(300, TimeUnit.SECONDS)
+        .readTimeout(300, TimeUnit.SECONDS)
+        .writeTimeout(300, TimeUnit.SECONDS)
+        .build()
     private val retryDelayMillis = 1000L
     private var currentCall: Call? = null
 
-    fun getImageDescription(imageUrl: String, descriptionType: String, callback: (result: String?, error: Throwable?) -> Unit) {
-        val apiUrl = "http://68.154.90.84:8081/api/describe-image"
-        val urlWithParams = apiUrl.toHttpUrlOrNull()?.newBuilder()?.apply {
-            addQueryParameter("image_url", imageUrl)
-            addQueryParameter("api_key", WeAccessConfig.requestKey)
-            addQueryParameter("dest", "en")
-            addQueryParameter("description_type", descriptionType)
-        }?.build().toString()
-
-        val request = Request.Builder()
-            .url(urlWithParams)
-            .get()
+    fun getImageDescription(imageUrl: String, callback: (result: String?, error: Throwable?) -> Unit) {
+        val apiUrl = "https://pl.weaccess.ai/mobile/api/wephoto-create/"
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("create_types","[\"alt\",\"desc\"]")
+            .addFormDataPart("image_url",imageUrl)
+            .addFormDataPart("lang","en")
+            .addFormDataPart("api_key",WeAccessConfig.requestKey ?: "")
             .build()
-
+        val request = Request.Builder()
+            .url(apiUrl)
+            .post(body)
+            .build()
         currentCall = client.newCall(request)
         currentCall?.enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {

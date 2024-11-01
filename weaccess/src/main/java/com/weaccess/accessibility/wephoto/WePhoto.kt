@@ -12,12 +12,17 @@ import com.weaccess.accessibility.wephoto.service.ApiService
 import java.util.LinkedList
 import java.util.Queue
 
+enum class DescriptionType {
+    SHORT,
+    LONG
+}
+
 object WePhoto {
     private val gson = Gson()
     private val apiService = ApiService()
 
-    private val descriptionCache = mutableMapOf<String, String?>()
-
+    // Cache'i ImageDescriptionModel olarak tanımlayın
+    private val descriptionCache = mutableMapOf<String, ImageDescpriptionModel>()
     private val requestQueue: Queue<RequestTask> = LinkedList()
     private var isRequestInProgress = false
 
@@ -32,31 +37,49 @@ object WePhoto {
         apiService.cancelRequest()
     }
 
-    fun ImageView.getImageDescription(imageUrl: String, descriptionType: String) {
-        loadCache(this.context)
+    fun ImageView.getImageDescription(imageUrl: String, type: DescriptionType = DescriptionType.SHORT) {
+        val context = this.context
+        loadCache(context)
 
-        Glide.with(this.context).load(imageUrl).into(this)
+        Glide.with(context).load(imageUrl).into(this)
 
         val cachedDescription = descriptionCache[imageUrl]
 
         if (cachedDescription != null) {
-            this.contentDescription = cachedDescription
-            Log.e("DEVOPS-NEVI", cachedDescription)
+            if (type == DescriptionType.SHORT) {
+                this.contentDescription = cachedDescription.imageAltText
+                Log.d("DEVOPS-NEVI", "short: ${cachedDescription.imageAltText}")
+            } else if (type == DescriptionType.LONG) {
+                this.contentDescription = cachedDescription.imageDesc
+                Log.d("DEVOPS-NEVI", "long: ${cachedDescription.imageDesc}")
+            } else {
+                this.contentDescription = cachedDescription.imageAltText
+            }
+            Log.d("DEVOPS-NEVI", "cachedDescription {short: ${cachedDescription.imageAltText} long: ${cachedDescription.imageDesc}}")
         } else {
-
-            enqueueRequest(imageUrl, descriptionType) { description ->
-                (this.context as? Activity)?.runOnUiThread {
-                    this.contentDescription = description
-                    Log.e("DEVOPS-NEVI", description)
+            enqueueRequest(imageUrl) { description ->
+                (context as? Activity)?.runOnUiThread {
+                    if (type == DescriptionType.SHORT) {
+                        this.contentDescription = description.imageAltText
+                        Log.d("DEVOPS-NEVI", "short: ${description.imageAltText}")
+                    } else if (type == DescriptionType.LONG) {
+                        this.contentDescription = description.imageDesc
+                        Log.d("DEVOPS-NEVI", "long: ${description.imageDesc}}")
+                    } else {
+                        this.contentDescription = description.imageAltText
+                        Log.d("DEVOPS-NEVI", "description: {short: ${description.imageAltText} long: ${description.imageDesc}}")
+                    }
                 }
-                descriptionCache[imageUrl] = description
-                saveCache(this.context)
+                if (description.imageAltText != null && description.imageDesc != null) {
+                    descriptionCache[imageUrl] = description
+                    saveCache(context)
+                }
             }
         }
     }
 
-    private fun enqueueRequest(imageUrl: String, descriptionType: String, callback: (String) -> Unit) {
-        val task = RequestTask(imageUrl, descriptionType, callback)
+    private fun enqueueRequest(imageUrl: String, callback: (ImageDescpriptionModel) -> Unit) {
+        val task = RequestTask(imageUrl, callback)
         requestQueue.offer(task)
         processNextRequest()
     }
@@ -67,27 +90,23 @@ object WePhoto {
         val task = requestQueue.poll() ?: return
         isRequestInProgress = true
 
-        fetchImageDescription(task.imageUrl, task.descriptionType) { description ->
-            descriptionCache[task.imageUrl] = description
+        fetchImageDescription(task.imageUrl) { description ->
             task.callback(description)
-
             isRequestInProgress = false
             processNextRequest()
         }
     }
 
-    private fun fetchImageDescription(imageUrl: String, descriptionType: String, callback: (String) -> Unit) {
-        apiService.getImageDescription(imageUrl, descriptionType) { result, error ->
+    private fun fetchImageDescription(imageUrl: String, callback: (ImageDescpriptionModel) -> Unit) {
+        apiService.getImageDescription(imageUrl) { result, error ->
             if (error != null) {
                 Log.e("DEVOPS-NEVI", error.toString())
-                callback("Error fetching description")
             } else {
-                val response = gson.fromJson(result, ImageDescpriptionModel::class.java)
-                if (response.output != null) {
-                    Log.e("DEVOPS-NEVI", response.output.first())
-                    callback(response.output.first())
-                } else {
-                    callback("No description available")
+                try {
+                    val response = gson.fromJson(result, ImageDescpriptionModel::class.java)
+                    callback(response)
+                } catch (e: Exception) {
+                    Log.e("DEVOPS-NEVI", "Parsing error: ${e.message}")
                 }
             }
         }
@@ -106,14 +125,13 @@ object WePhoto {
         val jsonCache = sharedPreferences.getString(CACHE_KEY, null)
 
         if (jsonCache != null) {
-            val type = object : TypeToken<MutableMap<String, String?>>() {}.type
+            val type = object : TypeToken<MutableMap<String, ImageDescpriptionModel>>() {}.type
             descriptionCache.putAll(gson.fromJson(jsonCache, type))
         }
     }
 
     data class RequestTask(
         val imageUrl: String,
-        val descriptionType: String,
-        val callback: (String) -> Unit
+        val callback: (ImageDescpriptionModel) -> Unit
     )
 }
