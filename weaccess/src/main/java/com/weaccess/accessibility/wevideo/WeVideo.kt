@@ -42,7 +42,7 @@ class WeVideo @JvmOverloads constructor(
     var signVideoList: List<SignVideoModel> = emptyList()
 
     init {
-
+        Log.d("DEVOPS-NEVI", "WeVideo init")
         val view = LayoutInflater.from(context).inflate(R.layout.wevideo_frame, this, true)
         gifImageView = view.findViewById(R.id.gif_image)
         buttonImageView = view.findViewById(R.id.controller_button)
@@ -53,7 +53,6 @@ class WeVideo @JvmOverloads constructor(
         videoService.fetchVideoDescription("730", 18,  26, onCompleted = {
             signVideoList = it
         })
-
 
     }
 
